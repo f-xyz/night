@@ -64,8 +64,7 @@ vec3 world(vec3 v) {
     vec3 wv = v;
     wv.y +=
         0.1 * sin(2.*wv.z - 5.*time)
-      + 0.1 * sin(wv.x)
-//      + 0.01 * fnoise(wv.xy)
+      + 0.1 * sin(wv.x) * fnoise(time*wv.yx/100.)
     ;
 
     return join(
@@ -98,9 +97,9 @@ void main() {
 
     gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
 
-    float posNoise = hash(5.0*pos);
-    if (posNoise < 0.005) {
-        gl_FragColor = 0.3*vec4(1.0, 1.0, 1.0, 1.0);
+    float stars = hash(5.0*pos);
+    if (stars < 0.005) {
+        gl_FragColor = 0.1*vec4(1.0, 1.0, 1.0, 1.0);
     }
 
     vec2 e = vec2(NORMAL_DELTA, 0.0); // gradient delta
@@ -135,7 +134,7 @@ void main() {
                 if (matId == 1.0) {
                     matC = 4.0 * fnoise(4.0*pos) * vec4(0.6, 0.5, 0.4, 1.0);
                 } else if (matId == 2.0) {
-                    matC = 0.25 * vec4(0.2, 0.6, 0.8, 4.0);
+                    matC = 0.2 * vec4(0.2, 0.6, 0.8, 1.0);
                 }
 
                 vec4 c = rayPower * matC * phong;
@@ -154,5 +153,5 @@ void main() {
             }
         }
 
-    gl_FragColor += 0.8*fnoise(pos+sin(0.1*time));
+    gl_FragColor += 0.4*fnoise(pos+sin(0.1*time));
 }
