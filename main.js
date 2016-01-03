@@ -41,6 +41,7 @@ define(function(require/*, exports, module*/) {
         console.log('start');
         config.x = 100;
         isRunning = true;
+        time = Date.now();
         loop();
     }
 
@@ -63,7 +64,7 @@ define(function(require/*, exports, module*/) {
 
     function step() {
         var now = Date.now();
-        shader.uniforms.time.value += 0.001;
+        shader.uniforms.time.value += (now - time) / 1000;
         time = now;
     }
 

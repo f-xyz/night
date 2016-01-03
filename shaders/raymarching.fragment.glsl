@@ -61,13 +61,15 @@ float fnoise(vec2 seed) {
 
 vec3 world(vec3 v) {
 
-    vec2 e = vec2(0.0, 1.0);
-
     vec3 wv = v;
-    wv.y += 0.1*sin(wv.z*2.-time*50.)/**noise(wv.z)*/+0.1*sin(wv.x);
+    wv.y +=
+        0.1 * sin(2.*wv.z - 5.*time)
+      + 0.1 * sin(wv.x)
+//      + 0.01 * fnoise(wv.xy)
+    ;
 
     return join(
-        vec3(sphere(v+vec3(-5.0, -8.0, 10.0+MAX_PATH), 20.0), 1.0, 0.0),
+        vec3(sphere(v + vec3(-5.0, -8.0, 10.0 + MAX_PATH), 20.0), 1.0, 0.0),
         vec3(plane(wv, 10.0), 2.0, 1.0));
 }
 
@@ -125,31 +127,21 @@ void main() {
                     world(v + e.yyx).x - world(v - e.yyx).x));
 
                 rd = normalize(reflect(rd, normal));
-                ro = v + 2.0*minPathD*rd;
+                ro = v + 2.0 * minPathD * rd;
 
                 vec3 light = eye;
                 float phong = max(0.0, dot(normal, normalize(light.xyz - v)));
 
                 if (matId == 1.0) {
-                    matC = 4.0 * fnoise(4.0*pos) * vec4(
-                        0.6,
-                        0.5,
-                        0.4,
-                        1.0
-                    );
-                }
-                else {
-                    matC = 0.25 * vec4(
-                        0.2,
-                        0.6,
-                        0.8,
-                        4.0
-                    );
+                    matC = 4.0 * fnoise(4.0*pos) * vec4(0.6, 0.5, 0.4, 1.0);
+                } else if (matId == 2.0) {
+                    matC = 0.25 * vec4(0.2, 0.6, 0.8, 4.0);
                 }
 
-                vec4 c = rayPower*matC*phong;
-                if (refl == 0.0)
+                vec4 c = rayPower * matC * phong;
+                if (refl == 0.0) {
                     gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+                }
 
                 if (matId == 2.0) {
                     float q = path/MAX_PATH;
@@ -162,5 +154,5 @@ void main() {
             }
         }
 
-    gl_FragColor += 0.5*fnoise(pos+sin(time));
+    gl_FragColor += 0.8*fnoise(pos+sin(0.1*time));
 }
