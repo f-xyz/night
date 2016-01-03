@@ -5,7 +5,7 @@ git status
 git branch -D gh-pages
 git branch gh-pages
 
-npm test
+#npm test
 
 #echo -e "\n"
 #echo "Commit message: $1";
