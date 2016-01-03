@@ -34,7 +34,6 @@ define(function(require/*, exports, module*/) {
     var box = new gl.Mesh(new gl.BoxGeometry(1, size.y/size.x, 1), shader);
     scene.add(box);
     renderer.render(scene, camera);
-    start();
 
     ///////////////////////////////////
 
