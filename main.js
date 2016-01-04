@@ -36,7 +36,7 @@ define(function(require/*, exports, module*/) {
     scene.add(box);
     renderer.render(scene, camera);
 
-    //start();
+    start();
 
     ///////////////////////////////////
 
