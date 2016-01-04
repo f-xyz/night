@@ -36,7 +36,9 @@ define(function(require/*, exports, module*/) {
     scene.add(box);
     renderer.render(scene, camera);
 
-    start();
+    if (shouldAutoStart()) {
+        start();
+    }
 
     ///////////////////////////////////
 
@@ -115,7 +117,11 @@ define(function(require/*, exports, module*/) {
     ////////////////////////////////////
 
     function isHD() {
-        return location.hash == '#hd';
+        return location.hash.match(/hd/);
+    }
+
+    function shouldAutoStart() {
+        return location.hash.match(/start/);
     }
 
 });
