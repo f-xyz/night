@@ -7,7 +7,8 @@ define(function(require/*, exports, module*/) {
     var stats = new Stats();
     document.body.appendChild(stats.domElement);
 
-    var size = new gl.Vector2(innerWidth, innerHeight);
+    var size = new gl.Vector2(innerWidth, innerHeight)
+        .divideScalar(isHD() ? 1 : 2);
     var config = new gl.Vector3(1000, 0, 0); // iterations / not used / not used
     var isRunning = false;
     var time = 0;
@@ -109,5 +110,11 @@ define(function(require/*, exports, module*/) {
 
     addEventListener('keydown', onKeyDown);
     addEventListener('keyup', onKeyUp);
+
+    ////////////////////////////////////
+
+    function isHD() {
+        return location.hash == '#hd';
+    }
 
 });

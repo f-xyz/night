@@ -1,19 +1,9 @@
-//#define HD
-#define PI 3.14159265
-
-#ifdef HD
-    #define MAX_STEPS       640.0
-    #define MAX_PATH        100.0
-    #define MIN_PATH_DELTA  1e-4
-    #define REFLECTIONS     3.0
-    #define NORMAL_DELTA    1e-1
-#else
-    #define MAX_STEPS       128.0
-    #define MAX_PATH        100.0
-    #define MIN_PATH_DELTA  1e-2
-    #define REFLECTIONS     3.0
-    #define NORMAL_DELTA    1e-2
-#endif
+#define PI              3.14159265
+#define MAX_STEPS       128.0
+#define MAX_PATH        100.0
+#define MIN_PATH_DELTA  1e-2
+#define REFLECTIONS     2.0
+#define NORMAL_DELTA    1e-2
 
 uniform float time;
 uniform float seed;
@@ -22,7 +12,7 @@ uniform vec2 mouse;
 uniform sampler2D tex;
 uniform sampler2D backbuffer;
 
-float plane(vec3 v, float y)  { return v.y + y; }
+float plane(vec3 v, float y) { return v.y + y; }
 float sphere(vec3 v, float r) { return length(v) - r; }
 
 vec3 join(vec3 a, vec3 b) {
@@ -60,13 +50,12 @@ float fnoise(vec2 seed) {
 }
 
 vec3 world(vec3 v) {
-
+    float mtime = time / 4.0;
     vec3 wv = v;
     wv.y +=
-        0.1 * sin(2.*wv.z - 5.*time)
-      + 0.1 * sin(wv.x) * fnoise(time*wv.yx/100.)
+        0.1 * sin(2.0*wv.z - 5.0*mtime)
+      + 0.1 * sin(wv.x) * fnoise(mtime*wv.yx/100.)
     ;
-
     return join(
         vec3(sphere(v + vec3(-5.0, -8.0, 10.0 + MAX_PATH), 20.0), 1.0, 0.0),
         vec3(plane(wv, 10.0), 2.0, 1.0));
@@ -83,75 +72,81 @@ void main() {
     vec3 lookAt = vec3(0.0, 3.0, 0.0);
 
     vec3 forward = normalize(lookAt - eye);
-    vec3 x = normalize(cross(up, forward)); // x
-    vec3 y = cross(forward, x); // y
-    vec3 o = eye + forward; // screen center point
+    vec3 x = normalize(cross(up, forward));
+    vec3 y = cross(forward, x);
+    vec3 o = eye + forward; // screen center
     vec3 ro = o + pos.x*x*ratio + pos.y*y; // ray origin
     vec3 rd = normalize(ro - eye); // ray direction
 
-    // raymarching
-
-    float path = 0.0; // depth = ray path length
-    float maxPath = MAX_PATH;
-    float minPathD = MIN_PATH_DELTA;
+    //
 
     gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
 
-    float stars = hash(5.0*pos);
-    if (stars < 0.005) {
-        gl_FragColor = 0.1*vec4(1.0, 1.0, 1.0, 1.0);
+    // stars
+
+    float starProbability = hash(pos);
+    if (starProbability < 0.001) {
+        gl_FragColor = vec4(0.2);
     }
 
-    vec2 e = vec2(NORMAL_DELTA, 0.0); // gradient delta
+    //
+
+    float depth = 0.0; // eq. ray path length
+    vec2 gradientDelta = vec2(NORMAL_DELTA, 0.0);
     vec3 normal;
-    vec3 v; // voxel
-    float matId; // material ID
-    vec4 matC; // material color
+    vec3 voxel;
+    float materialId;
+    vec4 diffuseColor;
     float rayPower = 1.0;
 
-    for (float refl = 0.0; refl < REFLECTIONS; refl++)
-        for (float i = 0.0; i < MAX_STEPS; ++i) {
-            v = ro + path * rd; // current voxel
-            vec3 w = world(v);
-            float deltaZ = w.x; // distance to the closest surface
-            path += deltaZ;
-            matId = w.y; // material ID
+    for (float iReflection = 0.0; iReflection < REFLECTIONS; iReflection++)
+        for (float iStep = 0.0; iStep < MAX_STEPS; ++iStep) {
+            voxel = ro + depth * rd; // calc current voxel
+            vec3 intersection = world(voxel);
+            float d = intersection.x; // distance to the closest surface
+            depth += d;
+            materialId = intersection.y; // material ID
 
-            if      (path > maxPath) break;
-            else if (deltaZ < minPathD) { // the ray hits
+            if (d < MIN_PATH_DELTA) { // the ray hits
 
                 normal = normalize(vec3(
-                    world(v + e.xyy).x - world(v - e.xyy).x,
-                    world(v + e.yxy).x - world(v - e.yxy).x,
-                    world(v + e.yyx).x - world(v - e.yyx).x));
+                    world(voxel + gradientDelta.xyy).x - world(voxel - gradientDelta.xyy).x,
+                    world(voxel + gradientDelta.yxy).x - world(voxel - gradientDelta.yxy).x,
+                    world(voxel + gradientDelta.yyx).x - world(voxel - gradientDelta.yyx).x));
 
                 rd = normalize(reflect(rd, normal));
-                ro = v + 2.0 * minPathD * rd;
+                ro = voxel + 2.0 * MIN_PATH_DELTA * rd;
 
                 vec3 light = eye;
-                float phong = max(0.0, dot(normal, normalize(light.xyz - v)));
+                float phong = max(0.0, dot(normal, normalize(light.xyz - voxel)));
 
-                if (matId == 1.0) {
-                    matC = 4.0 * fnoise(4.0*pos) * vec4(0.6, 0.5, 0.4, 1.0);
-                } else if (matId == 2.0) {
-                    matC = 0.2 * vec4(0.2, 0.6, 0.8, 1.0);
+                if (materialId == 1.0) {
+                    diffuseColor = 4.0 * fnoise(4.0*pos) * vec4(0.6, 0.5, 0.4, 1.0);
+                } else if (materialId == 2.0) {
+                    diffuseColor = 0.2 * vec4(0.2, 0.6, 0.8, 1.0);
                 }
 
-                vec4 c = rayPower * matC * phong;
-                if (refl == 0.0) {
+                vec4 c = rayPower * diffuseColor * phong;
+                if (iReflection == 0.0) {
                     gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
                 }
 
-                if (matId == 2.0) {
-                    float q = path/MAX_PATH;
-                    gl_FragColor += mix(c, vec4(0,0,0,1), q);
+                if (materialId == 2.0) {
+                    float q = depth / MAX_PATH;
+                    gl_FragColor += mix(c, vec4(0, 0, 0, 1), q);
                 } else {
                     gl_FragColor += c;
                 }
-                rayPower = w.z;
+
+                rayPower = intersection.z;
                 break;
+
+            } else if (depth > MAX_PATH) {
+               break;
             }
         }
+
+    // fog
 
     gl_FragColor += 0.4*fnoise(pos+sin(0.1*time));
 }
